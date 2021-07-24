@@ -1,0 +1,10 @@
+*.zip
+*.ipynb_checkpoints
+MLOps Setup.ipynb
+MLOps_with_Sklearn.ipynb
+
+sklearn_conf_matrix.png
+sklearn_roc_plot.png
+mlruns/
+.DS_Store
+data/creditcard.csv
