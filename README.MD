@@ -14,14 +14,9 @@ MLOps is an ML engineering culture and practice that aims at unifying ML system 
 
 - In production, model decay so faster unlike conventional software systems that do not degrade , you are continously checking for your data statistics , rolling back prediction when data drift occurs.
 
-##### What I would be implementing in this project.
-
-- Continuous Integration (CI)
-- Continuous Delivery (CD)
-- Continuous Training (CT)
 
 
-### STEPS 
+### FIRST STEPS IN EVERY ML PROCESS
 For any ML project, the following steps would first be implemented
 
 1. Data extraction: You select and integrate the relevant data from various data sources for the ML task.
@@ -37,4 +32,65 @@ For any ML project, the following steps would first be implemented
 5. Model evaluation and validation.
     - Model is evaluated on a holdout test set to evaluate the model quality.
     - Model performance is evaluated with metrics to assess quality
+
+
+
+
+
+##### What I would be implementing the following steps below for MLOps pipeline
+
+- Continuous Integration (CI)
+- Continuous Delivery (CD)
+- Continuous Training (CT)
+
+
+### Continous Integration
+It’s a practice that allows developers to frequently merge code changes into a central repository where builds and tests then run.
+In this setup, a CI pipeline and its components are built, tested, and packaged when new code is committed or pushed to the source code repository.
+For the CI setup, I would be implementing the following.
+
+1. Test the feature engineering logic e.g. testsing a function that accepts a categorical data column and encodes it.
+2. Test that your model prediction doesn't produce NaN values.
+3. Testing that each component in the pipeline produces the expected artifacts.
+
+
+### Continous Delivery
+CD is an extension of continuous integration since it automatically deploys all code changes to a testing and/or production environment after the build stage. 
+A  CD pipeline is a set of steps your code changes will go through to make their way to production.
+Continuously deliver new pipeline implementations to the target environment that in turn delivers prediction services of the newly trained model. 
+
+For the CD setup, I would implement the following
+- Set up infrastructure for model deployment with Terraform (an infrastructure as a code tool)
+and also verify the compatibility  of the model with the target infrastructure  such as memory, compute resources before I deploy your model. 
+- Validate the data before a batch prediction or retraining.
+- Verify that the model meets predictive performance metrics before deploying.
+- Test the prediction endpoint service performance such as latency (how long does it take the model to serve a request or batch request.)
+
+
+
+
+
+
+
+
+### Continous Training
+ML models are built on the assumption that the data used in production will be similar to the data observed in the past and  trained our models on but a situation where data is constantly changing , our model performance will be impacted, so our ML models need to be retrained regularly, this is where CT comes in play.
+
+Continuous Training (CT) and is part of the MLOps practice. Continuous training seeks to automatically and continuously retrain the model to adapt to changes that might occur in the data.
+While setting up your MLOps for Continous training , the following should be available
+
+1. Feature store : is a data warehouse of features for machine learning and it maintains a list of features along with their definitions and metadata.
+A Feature Store is a service that ingests large volumes of data, computes features, and stores them.
+<b>Why a Feature Store</b>
+    - It manages ineffective and expensive feature engineering practice
+    - Discover and reuse available feature sets for their properties, instead of re-creating it
+
+CT answers the following questions
+- When should the model be retrained or how often should it be retrained? 
+The following listed below determine that
+    - If your pipeline recieves a data with unexpected features or receiving features with unexpected values. 
+    - Significant changes in the statistical properties of data, which means that data patterns are changing, and you need to trigger a retraining of the model to capture these changes.
+    - Comparing model performance on models (model's drift)
+
+
 
