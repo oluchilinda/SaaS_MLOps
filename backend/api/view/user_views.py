@@ -44,6 +44,11 @@ def createFolder(directory):
             os.makedirs(directory)
     except OSError:
         return "Error: Creating directory. " + directory
+    
+    
+@user_main.route("/", methods=["GET"])
+def home():
+    return  "home page"
 
 @user_main.route("/company", methods=["POST", "GET"])
 def company():
@@ -62,7 +67,7 @@ def company():
         password = generate_password_hash(password)
 
         user = Company(email=email, password=password, company_name=company_name, user_name=username)
-        user.roles.append(Role(name='ADMIN'))
+        # user.roles.append(Role(name='ADMIN'))
 
         db.session.add(user)
         db.session.commit()

@@ -1,7 +1,7 @@
 from typing import ByteString
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from flask_user import  UserMixin
+from flask_user import UserMixin
 
 from . import db
 
@@ -35,14 +35,17 @@ class Company(BaseModel):
     user_name = db.Column(db.String(200), nullable=False)
 
     company_files = db.relationship("FileUpload", backref="company", lazy=True)
-    metadata_pipelines = db.relationship("PipelinesMetadata", backref="company", lazy=True)
-    feature_stores = db.relationship("FeatureStore", backref="company", lazy=True)
+    metadata_pipelines = db.relationship(
+        "MetadataPipeline", backref="company", lazy=True
+    )
+    feature_stores = db.relationship("FeatureName", backref="company", lazy=True)
 
     roles = db.relationship("Role", secondary="user_roles")
 
     @classmethod
     def get_by_email(cls, email):
         return cls.query.filter_by(email=email).first()
+
     @classmethod
     def get_by_username(cls, username):
         return cls.query.filter_by(user_name=username).first()
@@ -59,8 +62,17 @@ class Company(BaseModel):
             "company_name": self.company_name,
         }
 
+    
 
-
+    def get_metadatapipelines(self):
+        return dict(
+            id=self.id,
+            name=self.company_name,
+            metadata_pipelines=[
+                metadata_pipeline.to_dict()
+                for metadata_pipeline in self.metadata_pipelines
+            ],
+        )
 
 
 class Role(BaseModel):
@@ -71,7 +83,7 @@ class Role(BaseModel):
 class UserRoles(BaseModel):
     __tablename__ = "user_roles"
 
-    company_id= db.Column(
+    company_id = db.Column(
         db.Integer(), db.ForeignKey("company.id", ondelete="CASCADE")
     )
     role_id = db.Column(db.Integer(), db.ForeignKey("roles.id", ondelete="CASCADE"))
@@ -89,17 +101,57 @@ class DBConnection(BaseModel):
     pass
 
 
-class PipelinesMetadata(BaseModel):
+class FeatureName(BaseModel):
+    __tablename__ = "features"
+
+    name = db.Column(db.String(200))
+    company_id = db.Column(
+        db.Integer(), db.ForeignKey("company.id", ondelete="CASCADE"), nullable=False
+    )
+    parameters = db.relationship("FeatureScore", backref="features", lazy=False)
+    
+    def get_feature_scores(self):
+        return dict(
+            id=self.id,
+            name=self.name,
+            feature_stores=[
+                feature_store.to_dict() for feature_store in self.parameters
+            ],
+        )
+
+
+class MetadataPipeline(BaseModel):
+    __tablename__ = "metadata_pipelines"
+
+    name = db.Column(db.String(200))
+    company_id = db.Column(
+        db.Integer(), db.ForeignKey("company.id", ondelete="CASCADE"), nullable=False
+    )
+    parameters = db.relationship(
+        "MetaDataScore", backref="metadata_pipelines", lazy=False
+    )
+
+
+class MetaDataScore(BaseModel):
     __tablename__ = "pipelines_metadata"
-    text = db.Column(db.String(200))
-    company_id = db.Column(
-        db.Integer(), db.ForeignKey("company.id", ondelete="CASCADE"), nullable=False
+    score = db.Column(db.Float())
+    metadata_id = db.Column(
+        db.Integer(),
+        db.ForeignKey("metadata_pipelines.id", ondelete="CASCADE"),
+        nullable=False,
     )
 
 
-class FeatureStore(BaseModel):
+class FeatureScore(BaseModel):
     __tablename__ = "feature_store"
-    text = db.Column(db.String(200))
-    company_id = db.Column(
-        db.Integer(), db.ForeignKey("company.id", ondelete="CASCADE"), nullable=False
+    statistics = db.Column(db.Float())
+    name = db.Column(db.String(200))
+    feature_id = db.Column(
+        db.Integer(), db.ForeignKey("features.id", ondelete="CASCADE"), nullable=False
     )
+    
+    def to_dict(self):
+        return dict(
+            name=self.name,
+            statistics=self.statistics,
+        )

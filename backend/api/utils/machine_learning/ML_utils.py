@@ -16,6 +16,17 @@ from xgboost import XGBClassifier
 
 warnings.filterwarnings("ignore")
 
+logistic = LogisticRegression(random_state=1)
+decisiontree = DecisionTreeClassifier(random_state=1)
+randomforest= RandomForestClassifier(random_state=1,max_depth=10,n_estimators=50)
+xgb= XGBClassifier(n_estimators=50,max_depth=4)
+extratree=ExtraTreesClassifier(random_state=1) 
+gradientbooster = GradientBoostingClassifier(n_estimators=100, learning_rate=1.0,max_depth=1, random_state=0)
+
+models = [logistic,decisiontree,randomforest, xgb, extratree,gradientbooster]
+model_names=["logistic_model","decisiontree_model","randomforest_model","xgb_model",
+          "extratree_model","gradientbooster_model"]
+
 
 def read_data(data):
     try:
@@ -140,3 +151,170 @@ def trees_methods(model, tree_hyperparameters, X_train, y_train):
     final_paramters = dict(random_state=random_state, max_depth=max_depth)
 
     return max_depth, random_state, final_paramters
+
+
+def run_gridsearch_cv(list_of_models,model_names, X_train, X_test, y_train, y_true):
+    
+    #first create model dictionary
+    model_dict = dict(zip(model_names, list_of_models))
+    
+    precision_scores =[]
+    recall_scores =[]
+    accuracy_scores =[]
+    roc_scores =[]
+    #run the model
+    for model in models:
+        
+        classifier_model = model.fit(X_train,y_train)
+        y_pred = classifier_model.predict(X_test)
+        precision, accuracy, recall, roc_auc = eval_metrics(y_true, y_pred)
+        #append metrics
+        precision_scores.append(precision)
+        recall_scores.append(recall)
+        accuracy_scores.append(accuracy)
+        roc_scores.append(roc_auc)
+        
+    dataframe_dict = { "models":model_names,'acc': accuracy_scores, "recall":recall_scores,
+                      'precision': precision_scores, 'roc_auc':roc_scores} 
+    df = pd.DataFrame(dataframe_dict).sort_values(by=['roc_auc', 'acc'], ascending=False)
+    
+    #first log all model scores
+    file = df.to_csv('all_models_score_before_gridsearch.csv')
+    
+
+    #select the best models
+    classifier_name = df["models"].iloc[0]
+    
+    
+    #list all parameters for tuning
+    penalty = ['l1', 'l2']
+    C= np.logspace(0,4,10)
+    random_state=[2,4,5,8]
+    n_estimators=[40,50,100]
+    max_depth=[1,4,10,15]
+    learning_rate = np.logspace(0,4,10)
+    
+    tree_hyperparameters = dict(random_state=random_state,max_depth=max_depth,n_estimators=n_estimators)
+    linear_hyperparameters = dict(C=C, penalty=penalty, random_state=random_state)
+    ensemble_parameters = dict(n_estimators=n_estimators, learning_rate=learning_rate,
+                               max_depth=max_depth, random_state=random_state)
+    
+    if classifier_name == "logistic_model":
+        
+        #apply gridsearch
+        best_model = train_model_gridsearch(LogisticRegression(), linear_hyperparameters,X_train,y_train)
+        
+        #select best parameters
+        penalty = best_model.best_estimator_.get_params()['penalty']
+        C = best_model.best_estimator_.get_params()['C']
+        random_state = best_model.best_estimator_.get_params()['random_state']
+        final_paramters = dict(penalty=penalty, C=C, random_state=random_state)
+        
+        #run the final model
+        classifier = LogisticRegression(C=C, penalty=penalty, random_state=random_state)
+        classifier_model = classifier.fit(X_train,y_train)
+        y_pred = classifier_model.predict(X_test)
+        precision, accuracy, recall, roc_auc = eval_metrics(y_true, y_pred)
+        
+        #log metrics  
+        log_metrics(precision, accuracy, recall, roc_auc)
+        #log parameters
+        log_parameters(final_paramters)
+        #pickle model
+        pickle_model(classifier_model , classifier_name)
+        
+        
+    elif classifier_name == "decisiontree_model":
+        max_depth, random_state, final_paramters = trees_methods(model, tree_hyperparameters,
+                                                                             X_train,y_train)
+        #run the final model
+        classifier = DecisionTreeClassifier(random_state=random_state,max_depth=max_depth)
+        classifier_model = classifier.fit(X_train,y_train)
+        y_pred = classifier_model.predict(X_test)
+        precision, accuracy, recall, roc_auc = eval_metrics(y_true, y_pred)
+        
+        #log metrics  
+        log_metrics(precision, accuracy, recall, roc_auc)
+        #log parameters
+        log_parameters(final_paramters)
+        #pickle model
+        pickle_model(classifier_model , classifier_name)
+        
+    
+    elif classifier_name == "randomforest_model":
+        max_depth, random_state, final_paramters = trees_methods(model, tree_hyperparameters,
+                                                                             X_train,y_train)
+        #run the final model
+        classifier = RandomForestClassifier(random_state=random_state,max_depth=max_depth)
+        classifier_model = classifier.fit(X_train,y_train)
+        y_pred = classifier_model.predict(X_test)
+        precision, accuracy, recall, roc_auc = eval_metrics(y_true, y_pred)
+        #log metrics  
+        log_metrics(precision, accuracy, recall, roc_auc)
+        #log parameters
+        log_parameters(final_paramters)
+        #pickle model
+        pickle_model(classifier_model , classifier_name)
+        
+    
+    elif classifier_name == "gradientbooster_model":
+        max_depth, random_state, final_paramters = trees_methods(model, tree_hyperparameters,
+                                                                             X_train,y_train)
+        #run the final model
+        classifier = GradientBoostingClassifier(random_state=random_state,max_depth=max_depth)
+        classifier_model = classifier.fit(X_train,y_train)
+        y_pred = classifier_model.predict(X_test)
+        precision, accuracy, recall, roc_auc = eval_metrics(y_true, y_pred)
+        #log metrics  
+        log_metrics(precision, accuracy, recall, roc_auc)
+        #log parameters
+        log_parameters(final_paramters)
+        #pickle model
+        pickle_model(classifier_model , classifier_name)
+        
+        
+    elif classifier_name == "extratree_model":
+        max_depth, random_state, final_paramters = trees_methods(model, tree_hyperparameters,
+                                                                             X_train,y_train)
+        #run the final model
+        classifier = ExtraTreesClassifier(random_state=random_state,max_depth=max_depth)
+        classifier_model = classifier.fit(X_train,y_train)
+        y_pred = classifier_model.predict(X_test)
+        precision, accuracy, recall, roc_auc = eval_metrics(y_true, y_pred)
+        #log metrics  
+        log_metrics(precision, accuracy, recall, roc_auc)
+        #log parameters
+        log_parameters(final_paramters)
+        #pickle model
+        pickle_model(classifier_model , classifier_name)
+        
+        
+    else :
+        best_model = train_model_gridsearch(XGBClassifier(), ensemble_parameters,X_train,y_train)
+        
+        #select best parameters
+        n_estimators= best_model.best_estimator_.get_params()['n_estimators']
+        learning_rate = best_model.best_estimator_.get_params()['learning_rate']
+        max_depth = best_model.best_estimator_.get_params()['max_depth']
+        random_state = best_model.best_estimator_.get_params()['random_state']
+        final_paramters = dict(n_estimators=n_estimators, learning_rate=learning_rate,
+                               max_depth=max_depth, random_state=random_state)
+        
+        #pickle model
+        pickle_model(classifier_model , classifier_name)
+        
+        
+        #run the final model
+        
+        classifier = XGBClassifier(n_estimators=n_estimators, learning_rate=learning_rate,
+                               max_depth=max_depth, random_state=random_state)
+        classifier_model = classifier.fit(X_train,y_train)
+        y_pred = classifier_model.predict(X_test)
+        precision, accuracy, recall, roc_auc = eval_metrics(y_true, y_pred)
+        
+        #log metrics  
+        log_metrics(precision, accuracy, recall, roc_auc)
+        #log parameters
+        log_parameters(final_paramters)
+        #pickle model
+        pickle_model(classifier_model , classifier_name)
