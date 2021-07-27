@@ -8,3 +8,16 @@ sklearn_roc_plot.png
 mlruns/
 .DS_Store
 data/creditcard.csv
+
+env/
+*.sqlite
+*__pycache__
+.vscode
+loan_prediction.ipynb
+env_sample
+data
+redis-stable
+
+
+
+
