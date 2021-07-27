@@ -84,8 +84,14 @@ A Feature Store is a service that ingests large volumes of data, computes featur
 <b>Why a Feature Store</b>
     - It manages ineffective and expensive feature engineering practice
     - Discover and reuse available feature sets for their properties, instead of re-creating it
+2. Metaadata Pipelines Management :It contains information about the pipeline in order to help with model artifacts.
+It will contain the following.
+Top-performing models with hyperparameters and metrics.
+The path that contains the model artifacts or pickle file
+A pointer to the previously trained model if you need to roll back to a previous model version or if you need to produce evaluation metrics for a previous model version when the pipeline is given new test data during the model validation step.
 
-CT answers the following questions
+
+CT answers the following question
 - When should the model be retrained or how often should it be retrained? 
 The following listed below determine that
     - If your pipeline recieves a data with unexpected features or receiving features with unexpected values. 
