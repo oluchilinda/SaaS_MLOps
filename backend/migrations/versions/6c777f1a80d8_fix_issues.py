@@ -1,8 +1,8 @@
-"""empty message
+"""fix issues
 
-Revision ID: eba3ce396ba7
+Revision ID: 6c777f1a80d8
 Revises: 
-Create Date: 2021-07-26 23:34:14.553832
+Create Date: 2021-07-27 15:23:13.981810
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'eba3ce396ba7'
+revision = '6c777f1a80d8'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -25,6 +25,7 @@ def upgrade():
     sa.Column('email', sa.String(length=200), nullable=False),
     sa.Column('password', sa.String(length=200), nullable=False),
     sa.Column('company_name', sa.String(length=200), nullable=False),
+    sa.Column('user_name', sa.String(length=200), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
     )
@@ -47,16 +48,6 @@ def upgrade():
     sa.Column('jti', sa.String(length=36), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id')
-    )
-    op.create_table('company_staff',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('created_on', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_on', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('email', sa.String(length=200), nullable=False),
-    sa.Column('company_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['company_id'], ['company.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('email')
     )
     op.create_table('feature_store',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -89,12 +80,10 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('created_on', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated_on', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=True),
-    sa.Column('company_admin', sa.Integer(), nullable=True),
+    sa.Column('company_id', sa.Integer(), nullable=True),
     sa.Column('role_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['company_admin'], ['company.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['company_id'], ['company.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['user_id'], ['company_staff.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###
@@ -106,7 +95,6 @@ def downgrade():
     op.drop_table('pipelines_metadata')
     op.drop_table('files')
     op.drop_table('feature_store')
-    op.drop_table('company_staff')
     op.drop_table('token_blocklist')
     op.drop_table('roles')
     op.drop_table('db_connection')

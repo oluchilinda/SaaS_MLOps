@@ -1,10 +1,17 @@
 from datetime import datetime, timedelta, timezone
 
 from flask import Flask
+from celery import Celery
 from flask_cors import CORS
-from flask_jwt_extended import (JWTManager, create_access_token, get_jwt,
-                                get_jwt_identity, jwt_required,
-                                set_access_cookies, unset_jwt_cookies)
+from flask_jwt_extended import (
+    JWTManager,
+    create_access_token,
+    get_jwt,
+    get_jwt_identity,
+    jwt_required,
+    set_access_cookies,
+    unset_jwt_cookies,
+)
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_user import UserManager
@@ -12,29 +19,29 @@ from flask_user import UserManager
 from .config import config
 
 db = SQLAlchemy()
+celery = Celery()
 
 
 def create_app(config_name):
-    from .models import TokenBlocklist, Company
+    from .models import Company, TokenBlocklist
 
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
-    
+
     # Setup Flask-User and specify the User data-model
-    user_manager = UserManager(app, db, Company)
 
     db.init_app(app)
     Migrate(app, db)
+    # celery.init_app(app)
     jwt = JWTManager(app)
     CORS(app)
 
-    from .view.user_views import user_main
     from .view.prediction import prediction_main
+    from .view.user_views import user_main
 
     app.register_blueprint(user_main)
-    
-    
+    app.register_blueprint(prediction_main)
 
     # Register a callback function that takes whatever object is passed in as the
     # identity when creating JWTs and converts it to a JSON serializable format.
@@ -71,5 +78,5 @@ def create_app(config_name):
         except (RuntimeError, KeyError):
             # Case where there is not a valid JWT. Just return the original respone
             return response
-    
+
     return app

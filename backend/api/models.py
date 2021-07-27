@@ -26,14 +26,14 @@ class TokenBlocklist(db.Model):
     created_at = db.Column(db.DateTime, nullable=False)
 
 
-class Company(BaseModel, UserMixin):
+class Company(BaseModel):
     __tablename__ = "company"
 
     email = db.Column(db.String(200), nullable=False, unique=True)
     password = db.Column(db.String(200), nullable=False)
     company_name = db.Column(db.String(200), nullable=False)
+    user_name = db.Column(db.String(200), nullable=False)
 
-    staff = db.relationship("CompanyStaff", backref="company", lazy=True)
     company_files = db.relationship("FileUpload", backref="company", lazy=True)
     metadata_pipelines = db.relationship("PipelinesMetadata", backref="company", lazy=True)
     feature_stores = db.relationship("FeatureStore", backref="company", lazy=True)
@@ -43,6 +43,9 @@ class Company(BaseModel, UserMixin):
     @classmethod
     def get_by_email(cls, email):
         return cls.query.filter_by(email=email).first()
+    @classmethod
+    def get_by_username(cls, username):
+        return cls.query.filter_by(user_name=username).first()
 
     @classmethod
     def get_by_id(cls, id):
@@ -57,18 +60,7 @@ class Company(BaseModel, UserMixin):
         }
 
 
-class CompanyStaff(BaseModel):
-    __tablename__ = "company_staff"
 
-    email = db.Column(db.String(200), nullable=False, unique=True)
-    company_id = db.Column(
-        db.Integer(), db.ForeignKey("company.id", ondelete="CASCADE"), nullable=False
-    )
-    roles = db.relationship("Role", secondary="user_roles")
-    
-    @classmethod
-    def get_by_email(cls, email):
-        return cls.query.filter_by(email=email).first()
 
 
 class Role(BaseModel):
@@ -78,10 +70,8 @@ class Role(BaseModel):
 
 class UserRoles(BaseModel):
     __tablename__ = "user_roles"
-    user_id = db.Column(
-        db.Integer(), db.ForeignKey("company_staff.id", ondelete="CASCADE")
-    )
-    company_admin = db.Column(
+
+    company_id= db.Column(
         db.Integer(), db.ForeignKey("company.id", ondelete="CASCADE")
     )
     role_id = db.Column(db.Integer(), db.ForeignKey("roles.id", ondelete="CASCADE"))

@@ -1,1 +1,1 @@
-from . import user_views
+from . import user_views, prediction

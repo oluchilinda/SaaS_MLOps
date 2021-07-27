@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 import decimal
 import datetime
+import os
 
 from flask import (
     Blueprint,
@@ -15,9 +16,12 @@ from flask_jwt_extended import (
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_user import  roles_required
 
-from ..models import TokenBlocklist, Company, Role, CompanyStaff
+from ..models import TokenBlocklist, Company, Role
 
 from .. import db
+
+from .prediction import UPLOAD_FOLDER
+
 
 user_main = Blueprint("user_main", __name__)
 
@@ -33,7 +37,13 @@ def alchemyencoder(obj):
         return obj.isoformat()
     elif isinstance(obj, decimal.Decimal):
         return float(obj)
-
+    
+def createFolder(directory):
+    try:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except OSError:
+        return "Error: Creating directory. " + directory
 
 @user_main.route("/company", methods=["POST", "GET"])
 def company():
@@ -41,18 +51,25 @@ def company():
         email = request.values["email"]
         password = request.values["password"]
         company_name = request.values["company_name"]
+        username = request.values["username"]
 
 
         if Company.get_by_email(email):
             return {"message": "email already exist"}, 400
+        if Company.get_by_username(username):
+            return {"message": "username already exist"}, 400
 
         password = generate_password_hash(password)
 
-        user = Company(email=email, password=password, company_name=company_name)
+        user = Company(email=email, password=password, company_name=company_name, user_name=username)
         user.roles.append(Role(name='ADMIN'))
 
         db.session.add(user)
         db.session.commit()
+        
+        # create company folder
+        path = os.path.join(UPLOAD_FOLDER, username)
+        createFolder(path)
 
         return {"msg": "user has been created"}, 201
 
@@ -68,11 +85,6 @@ def login():
     company_admin = Company.get_by_email(email)
     if company_admin and check_password_hash(company_admin.password, password):
         return create_token(email)
-    
-    staff = CompanyStaff.get_by_email(email)
-    if staff and  check_password_hash(staff.password, password) :
-        return create_token(email)
-    
     else:
         {"message": "user doesn't exist"}, 400
         
